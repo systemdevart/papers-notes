@@ -3,6 +3,16 @@
 Hi, these are highly opinionated notes I recently started taking after reading some new papers — to answer questions that arose while reading each one, as well as random ML questions that popped into my head and the answers I found for them.
 I hope future me - or someone else - finds it useful.
 
+### Qwen3-Omni Technical Report
+
+The most interesting question is how the authors embedded audio and how they generated speech.
+
+For audio embeddings, they pretrained their own Audio Transformer (AuT) on 20 million hours of data—a standard approach, essentially the same idea as feeding Whisper latents directly into an LLM.
+
+In effect, they use a cascaded generation setup. Instead of the usual LLM → Text → TTS, they do LLM → LLM latents → TTS, which is a questionable choice given that the standard pipeline this year is to fuse audio and text into a single model. Concretely, for generation they introduce a second autoregressive model: from the GPT latents of the text model, when speech is needed, they autoregressively produce audio tokens of some RVQ quantizer, which are then decoded into audio by the quantizer’s standard decoder.
+
+Unfortunately, neither this paper nor the previous one provides any details about the quantizer, and—as often happens—they've bolted on generation as a side cascaded module rather than integrating it natively into the GPT text model.
+
 ### Diffusion Transformers with Representation Autoencoders
 
 I've been wondering if it's possible to run diffusion on a standard autoencoder without the variational baggage, and then this paper dropped: [https://arxiv.org/pdf/2510.11690](https://arxiv.org/pdf/2510.11690)
