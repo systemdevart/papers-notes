@@ -3,6 +3,14 @@
 Hi, these are highly opinionated notes I recently started taking after reading some new papers — to answer questions that arose while reading each one, as well as random ML questions that popped into my head and the answers I found for them.
 I hope future me - or someone else - finds it useful.
 
+### [Semantic-VAE: Semantic-Alignment Latent Representation for Better Speech Synthesis](https://arxiv.org/pdf/2509.22167)
+
+Motivation: Non-autoregressive TTS models are trained on mel-spectrograms; let's train on a VAE—not a plain one, but with semantically aligned latents, so TTS drops fewer phonemes.
+Method: Train the VAE not only with the variational loss but also by minimizing cosine distance to HuBERT embeddings; then train a non-autoregressive TTS (e.g., F5-TTS) on top of these VAE latents.
+Details: 64-dim latent (with TTS-VAEs it's unclear what size to use, but 64 is more or less standard, though the figures use much smaller), 40 latents/sec.
+Outcome: WER decreases on generations, as expected.
+Takeaway: The paper isn't very useful, but at least semantics has finally reached non-autoregressive TTS!
+
 ### [UltraEdit: Instruction-based Fine-Grained Image Editing at Scale](https://arxiv.org/pdf/2407.05282)
 
 Motivation: How can we create a large dataset of image-edited pairs so a diffusion model learns to edit images in a free-form way?
