@@ -3,9 +3,31 @@
 Hi, these are highly opinionated notes I recently started taking after reading some new papers — to answer questions that arose while reading each one, as well as random ML questions that popped into my head and the answers I found for them.
 I hope future me - or someone else - finds it useful.
 
+### [UltraEdit: Instruction-based Fine-Grained Image Editing at Scale](https://arxiv.org/pdf/2407.05282)
+
+Motivation: How can we create a large dataset of image-edited pairs so a diffusion model learns to edit images in a free-form way?
+
+I discussed this after "nano-banano" kicked off, and then this paper dropped. It wasn't clear at the beginning how such a dataset could be obtained - it turns out there's an interesting research method that adapts diffusion for this, and I wanted to share the gist from the paper.
+
+Problem: there aren't readily available pairs (source image, editing text, target image) that let a model generalize to prompts like "replace the dog on the right with a cat". Previously this was done via inpainting (masking + diffusion), but getting a model to find the right object on its own wasn't supported. Inpainting is also fairly limited - we need a more powerful tool.
+
+Enter the Prompt-to-Prompt method: the idea is to run a standard text-to-image diffusion model twice. The first pass obtains latents for the source image we want to edit; the second pass injects a signal into those latents so that we perform an edit rather than simply regenerating the original image.
+
+The process looks like this:
+
+1. For the source image, generate a caption using any image-understanding model (e.g., "a dog on a white background") — T_s.
+2. Add noise to the source image to obtain Z_s.
+3. Run the diffusion model on (T_s, Z_s) and record all K, V, Q from the cross-attention used to project text from T_s → Z_s.
+4. Generate a new prompt, e.g., "a cat on a white background" — T_t.
+5. Run the diffusion model on (T_t, Z_s), while preserving the K, V, Q corresponding to the parts of the text that didn't change ("on a white background").
+6. Obtain the target image I_t, where only the dog is changed to a cat and the background remains the same. Then ask an LLM to craft an editing instruction (not "a cat on a white background," but "replace the dog with a cat") and get the editing prompt P_t.
+7. Repeat this 100 times and filter by quality metrics.
+
+As a result, we've mined a dataset (I_s, P_t, I_t) — the source image, the editing prompt, and the target image — to train a model to perform free-form image editing.
+
 ### [Ming-UniAudio: Speech LLM for Joint Understanding, Generation and Editing with Unified Representation](https://xqacmer.github.io/Ming-Unitok-Audio.github.io/)
 
-A pretty interesting model has been released that tackles a wide range of audio tasks. The modelэs generations arenэt particularly strong, but what's most interesting is that it's an autoregressive LLM operating over latent representations. There's no paper yet, but the code and weights are open.
+A pretty interesting model has been released that tackles a wide range of audio tasks. The model's generations aren't particularly strong, but what's most interesting is that it's an autoregressive LLM operating over latent representations. There's no paper yet, but the code and weights are open.
 
 How did the authors get continuous representations into an LLM?
 They use a hybrid approach. Text is tokenized in the standard way, while audio is embedded with an AudioVAE (no quantization) into continuous latents.
@@ -81,7 +103,7 @@ Unfortunately, neither this paper nor the previous one provides any details abou
 
 ### [Diffusion Transformers with Representation Autoencoders](https://arxiv.org/pdf/2510.11690)
 
-I've been wondering if it's possible to run diffusion on a standard autoencoder without the variational baggage, and then this paper dropped: [https://arxiv.org/pdf/2510.11690](https://arxiv.org/pdf/2510.11690)
+I've been wondering if it's possible to run diffusion on a standard autoencoder without the variational baggage, and then this paper dropped.
 
 The authors introduce an approach called RAE (Representation Autoencoder). The main challenges they tackled were the discrete nature of standard AE latent spaces (which lack the continuity needed for diffusion) and the high dimensionality of latents from pretrained encoders.
 
