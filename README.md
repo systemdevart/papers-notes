@@ -3,6 +3,16 @@
 Hi, these are highly opinionated notes I recently started taking after reading some new papers — to answer questions that arose while reading each one, as well as random ML questions that popped into my head and the answers I found for them.
 I hope future me - or someone else - finds it useful.
 
+### [Controllable Video Generation: A Survey](https://arxiv.org/pdf/2507.16869)
+
+Motivation: What tokenizers are used in video generation.
+
+We discussed recently that the task of video generation, from a modeling perspective, might be closer to audio generation than the image domain. So, I looked at this survey of open video generation models and checked what they use for tokenizers.
+
+All models run on VAE-3D, and the vast majority use non-autoregressive diffusion (which is expected). But even the autoregressive models are essentially LLMs with a diffusion head (there was a review in this chat of a similar TTS model, Ming-UniAudio).
+
+Among modern discrete autoregressive models, I only found one, MAGVIT, which seems to be the exception.
+
 ### [Semantic-VAE: Semantic-Alignment Latent Representation for Better Speech Synthesis](https://arxiv.org/pdf/2509.22167)
 
 Motivation: Non-autoregressive TTS models are trained on mel-spectrograms; let's train on a VAE—not a plain one, but with semantically aligned latents, so TTS drops fewer phonemes.
