@@ -3,6 +3,15 @@
 Hi, these are highly opinionated notes I recently started taking after reading some new papers — to answer questions that arose while reading each one, as well as random ML questions that popped into my head and the answers I found for them.
 I hope future me - or someone else - finds it useful.
 
+### [Ditto: Motion-Space Diffusion for Controllable Realtime Talking Head Synthesis](https://arxiv.org/pdf/2411.19509)
+
+Recently I got interested in live avatar projects and decided to build a pet project with realtime talking-head "celeb avatars" from audio + a reference image, and I ran into this paper. The main trick in Ditto is: they don't run diffusion in image/VAE space at all — instead they first extract a compact motion representation from a face reenactment model (LivePortrait), and train a Diffusion Transformer (DiT) to predict that motion from audio. The motion space is basically expression deformation + head pose (their m={δ,R,t}), and the actual pixels are produced by a separate one-shot renderer: it takes appearance features from the reference image and warps/decodes them using the predicted motion to get the final frames.
+
+The "synced with audio" part is very literal: during training they align audio features, frames, and conditions at 25 fps, so each slice of audio lines up with one motion step. That alignment is what makes streaming feel natural: you can chunk the incoming audio, generate motion in chunks (with overlaps + fusion), and keep rendering frames as you go instead of waiting for the whole utterance.
+And because the diffusion output is an explicit motion vector (not mystery latents), they can add practical controls: emotion labels, eye state (blink/gaze), identity-adaptive keypoints.
+
+The code is super clean, and it was easy to adapt for real-time WebRTC streaming - honestly, a great open project!
+
 ### [Controllable Video Generation: A Survey](https://arxiv.org/pdf/2507.16869)
 
 Motivation: What tokenizers are used in video generation.
