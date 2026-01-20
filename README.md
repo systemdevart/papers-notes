@@ -3,6 +3,10 @@
 Hi, these are highly opinionated notes I recently started taking after reading some new papers — to answer questions that arose while reading each one, as well as random ML questions that popped into my head and the answers I found for them.
 I hope future me - or someone else - finds it useful.
 
+### [CosyEdit: Unlocking End-to-End Speech Editing Capability from Zero-Shot Text-to-Speech Models](https://arxiv.org/pdf/2601.05329)
+
+The paper focuses on how to get an audio editing model without an explicitly labeled editing dataset. The main focus is on editing linguistic content in speech (e.g., adding or deleting words) while preserving all other paralinguistic stuff. The authors use a nice trick: instead of collecting a dedicated dataset, they leverage in-context learning. They first train a general voice-cloning autoregressive model conditioned on [text, referenceclip], but at inference they pass [text+new_t ​ ext, referenceclip, originalspeech] and ask the model to continue the sequence for new_text. Simple to implement and a good idea.
+
 ### [Ditto: Motion-Space Diffusion for Controllable Realtime Talking Head Synthesis](https://arxiv.org/pdf/2411.19509)
 
 Recently I got interested in live avatar projects and decided to build a pet project with realtime talking-head "celeb avatars" from audio + a reference image, and I ran into this paper. The main trick in Ditto is: they don't run diffusion in image/VAE space at all — instead they first extract a compact motion representation from a face reenactment model (LivePortrait), and train a Diffusion Transformer (DiT) to predict that motion from audio. The motion space is basically expression deformation + head pose (their m={δ,R,t}), and the actual pixels are produced by a separate one-shot renderer: it takes appearance features from the reference image and warps/decodes them using the predicted motion to get the final frames.
