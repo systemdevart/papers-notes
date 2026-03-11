@@ -3,6 +3,10 @@
 Hi, these are highly opinionated notes I recently started taking after reading some new papers — to answer questions that arose while reading each one, as well as random ML questions that popped into my head and the answers I found for them.
 I hope future me - or someone else - finds it useful.
 
+### [Attention Sinks in Diffusion Language Models] (https://arxiv.org/pdf/2510.15731)
+
+This paper is mostly a fun observation: masked Diffusion LMs also have attention sinks, but they do not behave like in autoregressive models. In ARMs, sinks are usually quite stable and a few tokens keep attracting a disproportionate amount of attention. In DLMs, sinks are much more dynamic: during denoising they can move, disappear, and reappear, often drifting across the sequence as more tokens get unmasked. The other neat part is that DLMs stay surprisingly robust when these sink tokens are masked - performance drops, but nowhere near the catastrophic failure usually seen in ARMs.
+
 ### [CosyEdit: Unlocking End-to-End Speech Editing Capability from Zero-Shot Text-to-Speech Models](https://arxiv.org/pdf/2601.05329)
 
 The paper focuses on how to get an audio editing model without an explicitly labeled editing dataset. The main focus is on editing linguistic content in speech (e.g., adding or deleting words) while preserving all other paralinguistic stuff. The authors use a nice trick: instead of collecting a dedicated dataset, they leverage in-context learning. They first train a general voice-cloning autoregressive model conditioned on [text, referenceclip], but at inference they pass [text+new_t ​ ext, referenceclip, originalspeech] and ask the model to continue the sequence for new_text. Simple to implement and a good idea.
