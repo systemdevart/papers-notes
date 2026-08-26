@@ -2,6 +2,18 @@
 
 Hi, these are highly opinionated notes I started taking after reading new papers, to answer questions that came up while reading them, plus random ML questions that popped into my head. I hope future me, or someone else, finds them useful.
 
+### [Mechanism-Driven Monitors for Preemptive Detection of LLM Training Instability](https://arxiv.org/pdf/2606.28116)
+
+This paper is interesting because it treats loss curves and grad norms as too late for real pre-training debugging. The main idea is to monitor the place where the failure is actually written into the model: for low-precision Flash Attention, this means looking at the update geometry of Q/K weights, especially the spectral entropy of the QK bilinear update, not just raw weight norms.
+
+The MoE part is also useful: router collapse should be monitored through the router's actual job, expert selection. Per-token routing entropy and router-weight similarity are much more interpretable than just looking at load-balance counters after top-k routing has already discretized everything. My takeaway: this is not a finished production recipe, but a good template for designing monitors around mechanisms rather than symptoms.
+
+### [Model Merging in Pre-training of Large Language Models](https://arxiv.org/pdf/2505.12082v2)
+
+This paper is basically about checkpoint averaging during one pre-training trajectory, not merging different fine-tuned models. The surprisingly practical claim is that averaging checkpoints from the stable constant-learning-rate phase can improve the model and even approximate what you would get after annealing, which makes PMA feel like a cheap "annealing simulator."
+
+The most useful part for me is PMA-init: using an averaged checkpoint as the initialization for continued training, SFT, or even recovery after a bad loss spike. The caveat is that most evidence comes from internal ByteDance models and data, so it is not a perfectly reproducible recipe. Still, the practical takeaway is simple: if you already save checkpoints during pre-training, averaging them is almost free to test.
+
 ### [Drax: Speech Recognition with Discrete Flow Matching](https://arxiv.org/pdf/2510.04162)
 
 This paper itself is not that interesting. It mostly applies existing discrete flow matching (DFM) ideas to a different domain. But it was my first real encounter with DFM, so I wanted to write down a clean comparison of how flow matching changes in the discrete setting.
@@ -36,21 +48,21 @@ That is also why the loss stops being L2. The model's unknown is now a categoric
 
 And finally, a comparison table:
 
-| Aspect | Flow Matching (continuous) | Discrete Flow Matching (DFM) |
-| --- | --- | --- |
-| **State space** | Continuous vector space, usually $x_t \in \mathbb{R}^d$ | Discrete space, for example token sequences $X_t \in \mathcal{V}^N$ |
-| **What is modeled** | A continuous-time vector field $v_t(x)$ | A continuous-time probability velocity, or mass-transfer rate, $u_t(x, z)$ |
-| **Path definition** | A probability path $p_t(x)$ between source and data, often via endpoint-conditioned interpolants $p_t(x \mid x_0, x_1)$ | A probability path $p_t(x)$ between source and data, often via endpoint-conditioned discrete bridges $p_t(x \mid x_0, x_1)$ |
-| **Typical conditional path** | Linear interpolation, for example $x_t = (1 - t)x_0 + t x_1$ | Mixture bridge, $p_t(x^i \mid x_0, x_1) = (1 - \kappa_t)\delta_{x_0}(x^i) + \kappa_t \delta_{x_1}(x^i)$ |
-| **Meaning of $t$** | Continuous time, usually $t \in [0, 1]$ | Same |
-| **Velocity object** | $v_t(x)$, an actual vector in data space | $u_t^i(\cdot, z)$, a signed rate vector over vocabulary values at position $i$ |
-| **Learned target** | Usually regress the conditional or marginal velocity directly | Usually predict the endpoint posterior $p_{1 \mid t}(\cdot \mid z)$, then convert it to velocity |
-| **Training loss** | Often L2 or MSE on the velocity target | Usually cross-entropy on the endpoint token posterior |
-| **Inference dynamics** | Solve or discretize an ODE, for example $\dot{x}_t = v_t(x_t)$ | Use a CTMC-style or Euler-like PMF update, then sample tokens |
-| **What changes each step** | A continuous sample $x_t$ moves in $\mathbb{R}^d$ | Every token position is refined in parallel by resampling from an updated PMF |
-| **Sampler state** | A continuous vector or tensor | A full discrete sequence $X_t$ |
-| **Current-state representation** | Just the current point $x_t$ | A one-hot PMF at each position |
-| **Best intuition** | Move a point through continuous space toward the data manifold | Move probability mass from the current token toward the predicted final-token distribution |
+| Aspect                           | Flow Matching (continuous)                                                                                              | Discrete Flow Matching (DFM)                                                                                                |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| **State space**                  | Continuous vector space, usually $x_t \in \mathbb{R}^d$                                                                 | Discrete space, for example token sequences $X_t \in \mathcal{V}^N$                                                         |
+| **What is modeled**              | A continuous-time vector field $v_t(x)$                                                                                 | A continuous-time probability velocity, or mass-transfer rate, $u_t(x, z)$                                                  |
+| **Path definition**              | A probability path $p_t(x)$ between source and data, often via endpoint-conditioned interpolants $p_t(x \mid x_0, x_1)$ | A probability path $p_t(x)$ between source and data, often via endpoint-conditioned discrete bridges $p_t(x \mid x_0, x_1)$ |
+| **Typical conditional path**     | Linear interpolation, for example $x_t = (1 - t)x_0 + t x_1$                                                            | Mixture bridge, $p_t(x^i \mid x_0, x_1) = (1 - \kappa_t)\delta_{x_0}(x^i) + \kappa_t \delta_{x_1}(x^i)$                     |
+| **Meaning of $t$**               | Continuous time, usually $t \in [0, 1]$                                                                                 | Same                                                                                                                        |
+| **Velocity object**              | $v_t(x)$, an actual vector in data space                                                                                | $u_t^i(\cdot, z)$, a signed rate vector over vocabulary values at position $i$                                              |
+| **Learned target**               | Usually regress the conditional or marginal velocity directly                                                           | Usually predict the endpoint posterior $p_{1 \mid t}(\cdot \mid z)$, then convert it to velocity                            |
+| **Training loss**                | Often L2 or MSE on the velocity target                                                                                  | Usually cross-entropy on the endpoint token posterior                                                                       |
+| **Inference dynamics**           | Solve or discretize an ODE, for example $\dot{x}_t = v_t(x_t)$                                                          | Use a CTMC-style or Euler-like PMF update, then sample tokens                                                               |
+| **What changes each step**       | A continuous sample $x_t$ moves in $\mathbb{R}^d$                                                                       | Every token position is refined in parallel by resampling from an updated PMF                                               |
+| **Sampler state**                | A continuous vector or tensor                                                                                           | A full discrete sequence $X_t$                                                                                              |
+| **Current-state representation** | Just the current point $x_t$                                                                                            | A one-hot PMF at each position                                                                                              |
+| **Best intuition**               | Move a point through continuous space toward the data manifold                                                          | Move probability mass from the current token toward the predicted final-token distribution                                  |
 
 ### [Attention Sinks in Diffusion Language Models](https://arxiv.org/pdf/2510.15731)
 
